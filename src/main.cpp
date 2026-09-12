@@ -1,53 +1,43 @@
 #include "causet.hpp"
+#include "wavepacket.hpp"
 #include <iostream>
-#include <cmath>
-
-double single_trial_constant(int N, double T, double L) {
-    CausalSet cs;
-    cs.sprinkle(N, T, L);
-    cs.compute_causal_order();
-    cs.compute_layers(2);
-
-    std::vector<double> phi(N, 1.0);
-    double rho = N / (T * 2.0 * L);
-    std::vector<double> Bphi = cs.apply_dalembertian(phi, rho);
-
-    double margin_t = 2.0, margin_x = 1.5;
-    double sum_interior = 0.0;
-    int count_interior = 0;
-    for (int i = 0; i < N; i++) {
-        double t = cs.elements[i].t;
-        double x = cs.elements[i].x;
-        if (t > margin_t && t < (T - margin_t) && x > (-L + margin_x) && x < (L - margin_x)) {
-            sum_interior += Bphi[i];
-            count_interior++;
-        }
-    }
-    return sum_interior / count_interior;
-}
+#include <algorithm>
 
 int main() {
-    int N = 500;         // scaled down from 2000
+    CausalSet cs;
+    int N = 1000;
     double T = 10.0, L = 5.0;
-    int num_trials = 30;  // scaled down from 100
 
-    double grand_sum = 0.0;
-    double grand_sum_sq = 0.0;
-    for (int trial = 0; trial < num_trials; trial++) {
-        double val = single_trial_constant(N, T, L);
-        grand_sum += val;
-        grand_sum_sq += val * val;
-        std::cout << "Trial " << trial << " done, val=" << val << std::endl;
+    cs.sprinkle(N, T, L);
+    cs.compute_causal_order();
+
+    WavePacketParams params;
+    params.A = 1.0;
+    params.x0 = -2.0;   // start the packet on the left side, moving right
+    params.sigma = 0.5;
+    params.k0 = 3.0;
+    params.v = 1.0;
+
+    double t0 = 0.0;
+    double dt_slice = 0.3;  // thin strip near t=0
+
+    std::vector<double> phi_level0 = assign_initial_phi(cs, params, t0, dt_slice, 0);
+
+    // Collect (x, phi) pairs for elements actually in the slice, sorted by x,
+    // so we can see the packet shape by eye.
+    std::vector<std::pair<double,double>> slice_values;
+    for (int i = 0; i < N; i++) {
+        if (cs.elements[i].t >= t0 && cs.elements[i].t <= t0 + dt_slice) {
+            slice_values.push_back({cs.elements[i].x, phi_level0[i]});
+        }
     }
+    std::sort(slice_values.begin(), slice_values.end());
 
-    double mean = grand_sum / num_trials;
-    double variance = (grand_sum_sq / num_trials) - (mean * mean);
-    double stderr_of_mean = std::sqrt(variance / num_trials);
-
-    std::cout << "----" << std::endl;
-    std::cout << "N=" << N << ", trials=" << num_trials << std::endl;
-    std::cout << "Ensemble average B(phi=1) = " << mean << std::endl;
-    std::cout << "Standard error of the mean = " << stderr_of_mean << std::endl;
+    std::cout << "Elements in initial slice: " << slice_values.size() << std::endl;
+    std::cout << "x, phi(x) -- should peak near x = " << params.x0 << std::endl;
+    for (auto& pr : slice_values) {
+        std::cout << pr.first << ", " << pr.second << std::endl;
+    }
 
     return 0;
 }
