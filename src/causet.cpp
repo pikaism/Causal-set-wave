@@ -39,6 +39,52 @@ void CausalSet::compute_causal_order() {
     }
 }
 
+int CausalSet::interval_size(int y, int x) const {
+    int count = 0;
+    for (int z : past[x]) {
+        if (z == y) continue;
+        if (precedes(elements[y], elements[z])) {
+            count++;
+        }
+    }
+    return count;
+}
+
+void CausalSet::compute_layers(int max_layer) {
+    int N = elements.size();
+    layers.assign(N, std::vector<std::vector<int>>(max_layer + 1));
+
+    for (int x = 0; x < N; x++) {
+        for (int y : past[x]) {
+            int k = interval_size(y, x);
+            if (k <= max_layer) {
+                layers[x][k].push_back(y);
+            }
+        }
+    }
+}
+
+std::vector<double> CausalSet::apply_dalembertian(const std::vector<double>& phi, double rho) const {
+    int N = elements.size();
+    std::vector<double> result(N, 0.0);
+
+    double l2 = 1.0 / rho;
+
+    for (int x = 0; x < N; x++) {
+        double sum_L0 = 0.0, sum_L1 = 0.0, sum_L2 = 0.0;
+
+        for (int y : layers[x][0]) sum_L0 += phi[y];
+        for (int y : layers[x][1]) sum_L1 += phi[y];
+        for (int y : layers[x][2]) sum_L2 += phi[y];
+
+        result[x] = (1.0 / l2) * ( -2.0 * phi[x]
+                                    + 4.0 * sum_L0
+                                    - 8.0 * sum_L1
+                                    + 4.0 * sum_L2 );
+    }
+    return result;
+}
+
 void CausalSet::print_summary() const {
     int N = elements.size();
     long total_relations = 0;
