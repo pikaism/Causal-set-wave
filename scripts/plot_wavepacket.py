@@ -33,5 +33,5 @@ for b in range(num_bins):
 
 plt.suptitle("Wave packet: discrete (causal set) vs continuum, at successive times")
 plt.tight_layout()
-plt.savefig("data/wavepacket_comparison.png", dpi=150)
-print("Saved data/wavepacket_comparison.png")
+plt.savefig("figures/wavepacket_comparison.png", dpi=150)
+print("Saved figures/wavepacket_comparison.png")

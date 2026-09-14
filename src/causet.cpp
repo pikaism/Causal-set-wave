@@ -67,12 +67,10 @@ void CausalSet::compute_layers(int max_layer) {
 std::vector<double> CausalSet::apply_dalembertian(const std::vector<double>& phi, double rho) const {
     int N = elements.size();
     std::vector<double> result(N, 0.0);
-
     double l2 = 1.0 / rho;
 
     for (int x = 0; x < N; x++) {
         double sum_L0 = 0.0, sum_L1 = 0.0, sum_L2 = 0.0;
-
         for (int y : layers[x][0]) sum_L0 += phi[y];
         for (int y : layers[x][1]) sum_L1 += phi[y];
         for (int y : layers[x][2]) sum_L2 += phi[y];
@@ -91,10 +89,22 @@ void CausalSet::print_summary() const {
     for (const auto& p : past) {
         total_relations += p.size();
     }
-
     std::cout << "Causal set with " << N << " elements." << std::endl;
     std::cout << "Total causal relations found: " << total_relations << std::endl;
-
     long max_possible = (long)N * (N - 1) / 2;
     std::cout << "(out of a max possible " << max_possible << " pairs)" << std::endl;
+}
+
+std::vector<long> CausalSet::compute_interval_spectrum(int max_m) const {
+    int N = elements.size();
+    std::vector<long> Nm(max_m + 1, 0);
+
+    for (int x = 0; x < N; x++) {
+        for (int y : past[x]) {
+            int m = interval_size(y, x);
+            if (m > max_m) m = max_m;  // overflow bin
+            Nm[m]++;
+        }
+    }
+    return Nm;
 }
