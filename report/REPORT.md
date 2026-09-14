@@ -1,6 +1,7 @@
 # Discrete d'Alembertian and Wave Propagation on a Causal Set: A First Numerical Study
 
 **Author:** Shivangi Gupta
+
 **Repository:** https://github.com/pikaism/Causal-set-wave
 
 ## 1. Motivation and Goal
