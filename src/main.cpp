@@ -1,73 +1,57 @@
 #include "causet.hpp"
 #include "wavepacket.hpp"
 #include "wave_evolution.hpp"
+#include "continuum.hpp"
 #include <iostream>
-#include <fstream>
 #include <cmath>
 
-int main() {
+double run_discrete_trial(int N, double T, double L, const WavePacketParams& params,
+                           double t0, double dt_slice, double alpha, int target_bin, int num_bins) {
     CausalSet cs;
-    int N = 2000;
-    double T = 3.0;
-    double L = 3.0;
-
     cs.sprinkle(N, T, L);
     cs.compute_causal_order();
     cs.compute_layers(2);
 
-    WavePacketParams params;
-    params.A = 1.0;
-    params.x0 = -1.5;
-    params.sigma = 0.4;
-    params.k0 = 3.0;
-    params.v = 1.0;
-
-    double t0 = 0.0;
-    double dt_slice = 0.2;
-
     std::vector<double> phi = assign_initial_phi(cs, params, t0, dt_slice, 0);
-
     std::vector<bool> is_fixed(N, false);
     for (int i = 0; i < N; i++) {
-        if (cs.elements[i].t >= t0 && cs.elements[i].t <= t0 + dt_slice) {
-            is_fixed[i] = true;
-        }
+        if (cs.elements[i].t >= t0 && cs.elements[i].t <= t0 + dt_slice) is_fixed[i] = true;
     }
-
     double rho = N / (T * 2.0 * L);
-    double alpha = 0.3;
-
     evolve_field(cs, phi, is_fixed, rho, 0.0, alpha);
 
-    std::ofstream out("data/evolution_output.txt");
+    double bin_width = T / num_bins;
+    double t_lo = target_bin * bin_width, t_hi = (target_bin + 1) * bin_width;
+    double weighted_sum = 0.0, weight_total = 0.0;
     for (int i = 0; i < N; i++) {
-        out << cs.elements[i].t << " " << cs.elements[i].x << " " << phi[i] << "\n";
+        if (cs.elements[i].t >= t_lo && cs.elements[i].t < t_hi) {
+            double e = phi[i] * phi[i];
+            weighted_sum += cs.elements[i].x * e;
+            weight_total += e;
+        }
     }
-    out.close();
+    return (weight_total > 0) ? (weighted_sum / weight_total) : 0.0;
+}
+
+int main() {
+    double T = 3.0, L = 3.0;
+    WavePacketParams params;
+    params.A = 1.0; params.x0 = -1.5; params.sigma = 0.4; params.k0 = 3.0; params.v = 1.0;
 
     int num_bins = 6;
-    double bin_width = T / num_bins;
-    for (int b = 0; b < num_bins; b++) {
-        double t_lo = b * bin_width;
-        double t_hi = (b + 1) * bin_width;
+    int last_bin = num_bins - 1;  // compare at the final time bin
 
-        double weighted_sum = 0.0;
-        double weight_total = 0.0;
-        double total_energy = 0.0;
+    std::vector<ContinuumSnapshot> cont = solve_continuum_wave(params, T, L, 300, num_bins);
+    double cont_centroid = cont[last_bin].centroid_x;
 
-        for (int i = 0; i < N; i++) {
-            if (cs.elements[i].t >= t_lo && cs.elements[i].t < t_hi) {
-                double energy = phi[i] * phi[i];
-                weighted_sum += cs.elements[i].x * energy;
-                weight_total += energy;
-                total_energy += energy;
-            }
-        }
+    std::cout << "Continuum centroid at final bin: " << cont_centroid << std::endl;
+    std::cout << "---" << std::endl;
 
-        double centroid = (weight_total > 0) ? (weighted_sum / weight_total) : 0.0;
-        std::cout << "t in [" << t_lo << ", " << t_hi << "): "
-                  << "energy-weighted centroid x = " << centroid
-                  << " | total energy in bin = " << total_energy << std::endl;
+    for (int N : {1000, 2000, 4000}) {
+        double disc_centroid = run_discrete_trial(N, T, L, params, 0.0, 0.2, 0.3, last_bin, num_bins);
+        double gap = std::abs(disc_centroid - cont_centroid);
+        std::cout << "N=" << N << ": discrete centroid=" << disc_centroid
+                  << ", |gap to continuum|=" << gap << std::endl;
     }
 
     return 0;
