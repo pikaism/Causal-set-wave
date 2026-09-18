@@ -3,7 +3,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Image,
-                                 ListFlowable, ListItem, PageBreak)
+                                 ListFlowable, ListItem, PageBreak, KeepTogether)
 from reportlab.lib import colors
 import os
 
@@ -41,7 +41,7 @@ story.append(Paragraph("Discrete d'Alembertian and Wave Propagation on a Causal 
 story.append(Paragraph("Shivangi Gupta", author_style))
 story.append(Paragraph('<link href="https://github.com/pikaism/Causal-set-wave">github.com/pikaism/Causal-set-wave</link>', repo_style))
 
-def img(path, width=5.4*inch):
+def img(path, width=4.6*inch):
     return Image(path, width=width, height=width*0.55)
 
 story.append(Paragraph("1. Motivation and Goal", h1))
@@ -131,46 +131,55 @@ story.append(PageBreak())
 
 story.append(Paragraph("3. Results", h1))
 
-story.append(Paragraph("3.1 Wave packet propagation: discrete vs continuum", h2))
-story.append(img("figures/wavepacket_comparison.png"))
-story.append(Paragraph("Figure 1. Discrete (causal set, red) vs continuum (blue) field profile at six successive time windows.", caption))
-story.append(Paragraph(
-"At the initial time bin, the discrete (red) and continuum (blue) solutions agree "
-"closely, as expected since both share the same initial data. At later times, the "
-"continuum solution retains a clean, moving Gaussian shape, while the discrete "
-"solution becomes visibly noisier, though it broadly tracks the same rightward "
-"propagation. Quantitatively, the energy-weighted centroid in the discrete case "
-"drifts rightward but more slowly and with larger fluctuations than in the continuum "
-"case, reflecting the dissipative effect of the damping factor &alpha;=0.3. This is a "
-"direct, visual and quantitative confirmation that the damping needed to stabilize "
-"the discrete evolution measurably degrades the coherence of the propagating wave "
-"packet relative to the continuum &mdash; a real, quantified limitation of the current "
-"scheme.", body))
+block_3_1 = [
+    Paragraph("3.1 Wave packet propagation: discrete vs continuum", h2),
+    img("figures/wavepacket_comparison.png"),
+    Paragraph("Figure 1. Discrete (causal set, red) vs continuum (blue) field profile at six successive time windows.", caption),
+    Paragraph(
+    "At the initial time bin, the discrete (red) and continuum (blue) solutions agree "
+    "closely, as expected since both share the same initial data. At later times, the "
+    "continuum solution retains a clean, moving Gaussian shape, while the discrete "
+    "solution becomes visibly noisier, though it broadly tracks the same rightward "
+    "propagation. Quantitatively, the energy-weighted centroid in the discrete case "
+    "drifts rightward but more slowly and with larger fluctuations than in the continuum "
+    "case, reflecting the dissipative effect of the damping factor &alpha;=0.3. This is a "
+    "direct, visual and quantitative confirmation that the damping needed to stabilize "
+    "the discrete evolution measurably degrades the coherence of the propagating wave "
+    "packet relative to the continuum &mdash; a real, quantified limitation of the current "
+    "scheme.", body)
+]
+story.append(KeepTogether(block_3_1))
 
-story.append(Paragraph("3.2 Convergence with density", h2))
-story.append(img("figures/convergence_plot.png"))
-story.append(Paragraph("Figure 2. Gap between discrete and continuum centroids at the final time bin, as a function of sprinkling density N.", caption))
-story.append(Paragraph(
-"Comparing the discrete and continuum energy-weighted centroids at the final time bin, "
-"across increasing sprinkling density (N = 500, 1000, 2000, 4000), shows an overall "
-"decreasing trend in the gap between them, consistent with (though not a clean "
-"demonstration of) convergence to the continuum limit as density increases. Given the "
-"known per-realization variance of the BD operator and the modest number of trials, "
-"this should be regarded as a qualitative indication of convergence rather than a "
-"precise scaling measurement.", body))
+block_3_2 = [
+    Paragraph("3.2 Convergence with density", h2),
+    img("figures/convergence_plot.png"),
+    Paragraph("Figure 2. Gap between discrete and continuum centroids at the final time bin, as a function of sprinkling density N.", caption),
+    Paragraph(
+    "Comparing the discrete and continuum energy-weighted centroids at the final time bin, "
+    "across increasing sprinkling density (N = 500, 1000, 2000, 4000), shows an overall "
+    "decreasing trend in the gap between them, consistent with (though not a clean "
+    "demonstration of) convergence to the continuum limit as density increases. Given the "
+    "known per-realization variance of the BD operator and the modest number of trials, "
+    "this should be regarded as a qualitative indication of convergence rather than a "
+    "precise scaling measurement.", body)
+]
+story.append(KeepTogether(block_3_2))
 
-story.append(Paragraph("3.3 n-interval spectrum", h2))
-story.append(img("figures/interval_spectrum.png"))
-story.append(Paragraph("Figure 3. n-interval spectrum N_m of the sprinkled causal set (N=2000), cf. Surya [6] Fig. 3.", caption))
-story.append(Paragraph(
-"The computed spectrum N<sub>m</sub> decreases smoothly and monotonically with m, matching "
-"the qualitative \"continuumlike\" signature described in Surya [6] (Fig. 3) for a "
-"causal diamond in Minkowski spacetime. A smooth, monotonically decreasing N<sub>m</sub> is "
-"characteristic of sprinklings into continuum-like geometries; significant deviations "
-"from this shape have been associated with non-continuumlike causal sets. This "
-"provides an independent, order-theoretic confirmation that the sprinkled causal set "
-"used throughout this project is a genuine continuum approximation, using a "
-"diagnostic directly drawn from current causal set research.", body))
+block_3_3 = [
+    Paragraph("3.3 n-interval spectrum", h2),
+    img("figures/interval_spectrum.png"),
+    Paragraph("Figure 3. n-interval spectrum N_m of the sprinkled causal set (N=2000), cf. Surya [6] Fig. 3.", caption),
+    Paragraph(
+    "The computed spectrum N<sub>m</sub> decreases smoothly and monotonically with m, matching "
+    "the qualitative \"continuumlike\" signature described in Surya [6] (Fig. 3) for a "
+    "causal diamond in Minkowski spacetime. A smooth, monotonically decreasing N<sub>m</sub> is "
+    "characteristic of sprinklings into continuum-like geometries; significant deviations "
+    "from this shape have been associated with non-continuumlike causal sets. This "
+    "provides an independent, order-theoretic confirmation that the sprinkled causal set "
+    "used throughout this project is a genuine continuum approximation, using a "
+    "diagnostic directly drawn from current causal set research.", body)
+]
+story.append(KeepTogether(block_3_3))
 
 story.append(PageBreak())
 
